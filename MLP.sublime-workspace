@@ -3,29 +3,66 @@
 	{
 		"selected_items":
 		[
+			[
+				"nabl",
+				"nabla_w\tstatement"
+			],
+			[
+				"mini",
+				"mini_batch\tparam"
+			],
+			[
+				"trainin",
+				"training_data\tparam"
+			],
+			[
+				"traini",
+				"training_data\tparam"
+			]
 		]
 	},
 	"buffers":
 	[
-		{
-			"settings":
-			{
-				"buffer_size": 0,
-				"line_ending": "Unix"
-			}
-		}
 	],
-	"build_system": "",
+	"build_system": "Packages/Python/Python.sublime-build",
 	"build_system_choices":
 	[
+		[
+			[
+				[
+					"Anaconda Python Builder",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				],
+				[
+					"Packages/SublimeREPL/sublimerepl_build_system_hack.sublime-build",
+					""
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		]
 	],
 	"build_varint": "",
 	"command_palette":
 	{
 		"height": 392.0,
-		"last_filter": "gits",
+		"last_filter": "git stat",
 		"selected_items":
 		[
+			[
+				"git stat",
+				"git: status"
+			],
 			[
 				"gits",
 				"Preferences: GitSavvy Settings"
@@ -55,7 +92,7 @@
 				"UI: Select Theme"
 			]
 		],
-		"width": 450.0
+		"width": 418.0
 	},
 	"console":
 	{
@@ -75,10 +112,12 @@
 	},
 	"expanded_folders":
 	[
-		"/Users/adriancristea/Documents/University Files/4th Year/MLP/mlp"
+		"/Users/adriancristea/Documents/University Files/4th Year/MLP/mlp",
+		"/Users/adriancristea/Documents/University Files/4th Year/MLP/mlp/book_chapter_1"
 	],
 	"file_history":
 	[
+		"/Users/adriancristea/Documents/University Files/4th Year/MLP/mlp/book_chapter_1/network.py",
 		"/Users/adriancristea/Documents/Python Files/test2.py",
 		"/Users/adriancristea/Library/Application Support/Sublime Text 3/Packages/Anaconda/Anaconda.sublime-settings",
 		"/Users/adriancristea/Library/Application Support/Sublime Text 3/Packages/User/Anaconda.sublime-settings"
@@ -116,36 +155,13 @@
 	"groups":
 	[
 		{
-			"selected": 0,
 			"sheets":
 			[
-				{
-					"buffer": 0,
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 0,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				}
+			]
+		},
+		{
+			"sheets":
+			[
 			]
 		}
 	],
@@ -155,7 +171,7 @@
 	},
 	"input":
 	{
-		"height": 0.0
+		"height": 38.0
 	},
 	"layout":
 	{
@@ -166,6 +182,12 @@
 				0,
 				1,
 				1
+			],
+			[
+				0,
+				1,
+				1,
+				2
 			]
 		],
 		"cols":
@@ -176,13 +198,18 @@
 		"rows":
 		[
 			0.0,
+			0.5,
 			1.0
 		]
 	},
 	"menu_visible": true,
-	"output.exec":
+	"output.GitSavvy":
 	{
 		"height": 115.0
+	},
+	"output.exec":
+	{
+		"height": 209.0
 	},
 	"output.find_results":
 	{
@@ -222,15 +249,15 @@
 		],
 		"width": 0.0
 	},
-	"selected_group": 0,
+	"selected_group": 1,
 	"settings":
 	{
 	},
 	"show_minimap": true,
 	"show_open_files": false,
 	"show_tabs": true,
-	"side_bar_visible": true,
-	"side_bar_width": 150.0,
+	"side_bar_visible": false,
+	"side_bar_width": 50.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
