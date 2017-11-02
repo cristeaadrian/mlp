@@ -103,31 +103,29 @@ class AffineLayer(LayerWithParameters):
 
     def fprop(self, inputs):
         """Forward propagates activations through the layer transformation.
-
         For inputs `x`, outputs `y`, weights `W` and biases `b` the layer
         corresponds to `y = W.dot(x) + b`.
-
         Args:
             inputs: Array of layer inputs of shape (batch_size, input_dim).
-
         Returns:
             outputs: Array of layer outputs of shape (batch_size, output_dim).
         """
-        raise NotImplementedError()
+        return inputs.dot(self.weights.T) + self.biases
 
     def grads_wrt_params(self, inputs, grads_wrt_outputs):
         """Calculates gradients with respect to layer parameters.
-
         Args:
             inputs: array of inputs to layer of shape (batch_size, input_dim)
             grads_wrt_to_outputs: array of gradients with respect to the layer
                 outputs of shape (batch_size, output_dim)
-
         Returns:
             list of arrays of gradients with respect to the layer parameters
             `[grads_wrt_weights, grads_wrt_biases]`.
         """
-        raise NotImplementedError()
+
+        grads_wrt_weights = np.dot(grads_wrt_outputs.T, inputs)
+        grads_wrt_biases = np.sum(grads_wrt_outputs, axis=0)
+        return [grads_wrt_weights, grads_wrt_biases]
 
     @property
     def params(self):
