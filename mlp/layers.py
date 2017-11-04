@@ -348,6 +348,7 @@ class ELULayer(Layer):
 
         For inputs `x` and outputs `y` this corresponds to `y = max(0, x)`.
         """
+        alpha = 1
         outputs = np.where(inputs <= 0, 
                            alpha * (np.exp(inputs) - 1), 
                            inputs)
@@ -378,7 +379,7 @@ class SELULayer(Layer):
         lambda_const = 1.0507
         outputs = np.where(inputs <= 0, 
                            lambda_const * alpha * (np.exp(inputs) - 1), 
-                           lambda_const * inputs) #remove and replace with your code
+                           lambda_const * inputs)
         return outputs
 
     def bprop(self, inputs, outputs, grads_wrt_outputs):
@@ -434,41 +435,3 @@ class SoftmaxLayer(Layer):
 
     def __repr__(self):
         return 'SoftmaxLayer'
-    
-class ELULayer(Layer):
-    """Layer implementing an element-wise hyperbolic tangent transformation."""
-
-    def fprop(self, inputs):
-        """
-        """
-        alpha = 1
-        return np.where(inputs <= 0, 
-                        alpha * (np.exp(inputs) - 1), 
-                        inputs)
-
-    def bprop(self, inputs, outputs, grads_wrt_outputs):
-        """
-        """
-        return
-
-    def __repr__(self):
-        return 'ELULayer'
-    
-class SELULayer(Layer):
-    """Layer implementing an element-wise hyperbolic tangent transformation."""
-
-    def fprop(self, inputs):
-        """
-        """
-        
-        return np.where(inputs <= 0, 
-                        lambda_const * alpha * (np.exp(inputs) - 1), 
-                        lambda_const * inputs)
-
-    def bprop(self, inputs, outputs, grads_wrt_outputs):
-        """
-        """
-        return
-
-    def __repr__(self):
-        return 'SELULayer'
