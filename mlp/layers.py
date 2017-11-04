@@ -323,6 +323,7 @@ class LeakyReluLayer(Layer):
 
         For inputs `x` and outputs `y` this corresponds to `y = max(0, x)`.
         """
+        alpha = 0.01
         outputs = np.where(inputs <= 0, 
                            alpha * inputs, 
                            inputs)
@@ -334,7 +335,10 @@ class LeakyReluLayer(Layer):
         Given gradients with respect to the outputs of the layer calculates the
         gradients with respect to the layer inputs.
         """
-        gradients = inputs #remove and replace with your code
+        alpha = 0.01
+        gradients = np.where(outputs <= 0,
+                             alpha,
+                             1) * grads_wrt_outputs # where should the 0 go???
         return gradients
 
     def __repr__(self):
@@ -360,7 +364,10 @@ class ELULayer(Layer):
         Given gradients with respect to the outputs of the layer calculates the
         gradients with respect to the layer inputs.
         """
-        gradients = inputs #remove and replace with your code
+        alpha = 1
+        gradients = np.where(outputs <= 0,
+                             alpha * np.exp(inputs),
+                             1) * grads_wrt_outputs # where should the 0 go???
         return gradients
 
     def __repr__(self):
@@ -388,7 +395,11 @@ class SELULayer(Layer):
         Given gradients with respect to the outputs of the layer calculates the
         gradients with respect to the layer inputs.
         """
-        gradients = inputs #remove and replace with your code
+        alpha = 1.6733
+        lambda_const = 1.0507
+        gradients = np.where(outputs <= 0,
+                             lambda_const * alpha * np.exp(inputs),
+                             lambda_const) * grads_wrt_outputs # where should the 0 go???
         return gradients
 
     def __repr__(self):
