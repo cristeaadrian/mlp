@@ -43,7 +43,6 @@ class UniformInit(object):
     def __call__(self, shape):
         return self.rng.uniform(low=self.low, high=self.high, size=shape)
 
-
 class NormalInit(object):
     """Random normal parameter initialiser."""
 
