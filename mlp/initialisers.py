@@ -63,6 +63,7 @@ class NormalInit(object):
     def __call__(self, shape):
         return self.rng.normal(loc=self.mean, scale=self.std, size=shape)
 
+<<<<<<< HEAD
 class SELUInit(object):
     """SELU Initializer."""
     # write code that implements SELU initialization. Take inspiration from the other initializers in this file.
@@ -70,15 +71,28 @@ class SELUInit(object):
 
 class GlorotUniformInit(object):
     """Glorot and Bengio (2010) random uniform weights initialiser.
+=======
+class GlorotUniformInit(object):
+    """Glorot and Bengio (2010) random uniform weights initialiser.
+
+>>>>>>> c949119603ebb397ab9d783ec62efe4c7af9e76a
     Initialises an two-dimensional parameter array using the 'normalized
     initialisation' scheme suggested in [1] which attempts to maintain a
     roughly constant variance in the activations and backpropagated gradients
     of a multi-layer model consisting of interleaved affine and logistic
     sigmoidal transformation layers.
+<<<<<<< HEAD
+=======
+
+>>>>>>> c949119603ebb397ab9d783ec62efe4c7af9e76a
     Weights are sampled from a zero-mean uniform distribution with standard
     deviation `sqrt(2 / (input_dim * output_dim))` where `input_dim` and
     `output_dim` are the input and output dimensions of the weight matrix
     respectively.
+<<<<<<< HEAD
+=======
+
+>>>>>>> c949119603ebb397ab9d783ec62efe4c7af9e76a
     References:
       [1]: Understanding the difficulty of training deep feedforward neural
            networks, Glorot and Bengio (2010)
@@ -86,6 +100,10 @@ class GlorotUniformInit(object):
 
     def __init__(self, gain=1., rng=None):
         """Construct a normalised initilisation random initialiser object.
+<<<<<<< HEAD
+=======
+
+>>>>>>> c949119603ebb397ab9d783ec62efe4c7af9e76a
         Args:
             gain: Multiplicative factor to scale initialised weights by.
                 Recommended values is 1 for affine layers followed by
@@ -107,15 +125,27 @@ class GlorotUniformInit(object):
 
 class GlorotNormalInit(object):
     """Glorot and Bengio (2010) random normal weights initialiser.
+<<<<<<< HEAD
+=======
+
+>>>>>>> c949119603ebb397ab9d783ec62efe4c7af9e76a
     Initialises an two-dimensional parameter array using the 'normalized
     initialisation' scheme suggested in [1] which attempts to maintain a
     roughly constant variance in the activations and backpropagated gradients
     of a multi-layer model consisting of interleaved affine and logistic
     sigmoidal transformation layers.
+<<<<<<< HEAD
+=======
+
+>>>>>>> c949119603ebb397ab9d783ec62efe4c7af9e76a
     Weights are sampled from a zero-mean normal distribution with standard
     deviation `sqrt(2 / (input_dim * output_dim))` where `input_dim` and
     `output_dim` are the input and output dimensions of the weight matrix
     respectively.
+<<<<<<< HEAD
+=======
+
+>>>>>>> c949119603ebb397ab9d783ec62efe4c7af9e76a
     References:
       [1]: Understanding the difficulty of training deep feedforward neural
            networks, Glorot and Bengio (2010)
@@ -123,6 +153,10 @@ class GlorotNormalInit(object):
 
     def __init__(self, gain=1., rng=None):
         """Construct a normalised initilisation random initialiser object.
+<<<<<<< HEAD
+=======
+
+>>>>>>> c949119603ebb397ab9d783ec62efe4c7af9e76a
         Args:
             gain: Multiplicative factor to scale initialised weights by.
                 Recommended values is 1 for affine layers followed by
