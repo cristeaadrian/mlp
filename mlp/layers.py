@@ -357,8 +357,12 @@ class BatchNormalizationLayer(StochasticLayerWithParameters):
 
     def fprop(self, inputs, stochastic=True):
         """Forward propagates inputs through a layer."""
-
-        raise NotImplementedError
+        mean = np.mean(inputs, axis=0)
+        variance = np.var(inputs, axis=0)
+        
+        z_norm = (inputs - mean) / (variance + self.epsilon) ** 0.5
+        
+        return self.gamma * z_norm + self.beta
 
     def bprop(self, inputs, outputs, grads_wrt_outputs):
         """Back propagates gradients through a layer.
@@ -377,8 +381,17 @@ class BatchNormalizationLayer(StochasticLayerWithParameters):
             Array of gradients with respect to the layer inputs of shape
             (batch_size, input_dim).
         """
-
-        raise NotImplementedError
+        size = np.shape(inputs)[0]
+        
+        mean = np.mean(inputs, axis=0)
+        variance = np.var(inputs, axis=0)
+        dz_norm = self.gamma * grads_wrt_outputs
+        
+        dvariance = np.sum(dz_norm * (inputs - mean) * (-1/2) * (variance + self.epsilon) ** (-3/2), axis=0)
+        dmean = np.sum(dz_norm * (-1) * (variance + self.epsilon) ** (-0.5), axis=0) + dvariance * 1./size * np.sum(-2 * (inputs - mean), axis=0)
+        dz = dz_norm * (variance + self.epsilon) ** (-0.5) + dvariance * 2./size * (inputs - mean) + dmean * 1./size 
+        
+        return dz
 
     def grads_wrt_params(self, inputs, grads_wrt_outputs):
         """Calculates gradients with respect to layer parameters.
@@ -392,7 +405,14 @@ class BatchNormalizationLayer(StochasticLayerWithParameters):
             list of arrays of gradients with respect to the layer parameters
             `[grads_wrt_weights, grads_wrt_biases]`.
         """
-        raise NotImplementedError
+        mean = np.mean(inputs, axis=0)
+        variance = np.var(inputs, axis=0)
+        dz_norm = (inputs - mean) / (variance + self.epsilon) ** 0.5
+        
+        dgamma = np.sum(grads_wrt_outputs * dz_norm, axis=0)
+        dbeta = np.sum(grads_wrt_outputs, axis=0)
+        
+        return [dgamma, dbeta]
 
     def params_penalty(self):
         """Returns the parameter dependent penalty term for this layer.

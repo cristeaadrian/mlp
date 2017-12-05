@@ -160,3 +160,101 @@ class MomentumLearningRule(GradientDescentLearningRule):
             mom *= self.mom_coeff
             mom -= self.learning_rate * grad
             param += mom
+
+class RMSPropLearningRule(GradientDescentLearningRule):
+    
+    def __init__(self, learning_rate=1e-3, mom2_coeff=0.9):
+        super(RMSPropLearningRule, self).__init__(learning_rate)
+        assert mom2_coeff >= 0. and mom2_coeff <= 1., (
+            'mom2_coeff should be in the range [0, 1].'
+        )
+        self.mom2_coeff = mom2_coeff
+
+    def initialise(self, params):
+        """Initialises the state of the learning rule for a set or parameters.
+
+        This must be called before `update_params` is first called.
+
+        Args:
+            params: A list of the parameters to be optimised. Note these will
+                be updated *in-place* to avoid reallocating arrays on each
+                update.
+        """
+        super(RMSPropLearningRule, self).initialise(params)
+        self.moms2 = []
+        for param in self.params:
+            self.moms2.append(np.zeros_like(param))
+
+    def reset(self):
+        """Resets any additional state variables to their intial values.
+
+        For this learning rule this corresponds to zeroing all the momenta.
+        """
+        for mom2 in zip(self.moms2):
+            mom2 *= 0.
+
+    def update_params(self, grads_wrt_params):
+        """Applies a single update to all parameters.
+
+        All parameter updates are performed using in-place operations and so
+        nothing is returned.
+
+        Args:
+            grads_wrt_params: A list of gradients of the scalar loss function
+                with respect to each of the parameters passed to `initialise`
+                previously, with this list expected to be in the same order.
+        """
+        for param, mom2, grad in zip(self.params, self.moms2, grads_wrt_params):
+            mom2 *= self.mom2_coeff
+            mom2 += (1 - self.mom2_coeff) * (grad ** 2)
+            param -= ((self.learning_rate * grad) / (np.sqrt(mom2) + 1e-8))
+            
+
+class ADAMLearningRule(GradientDescentLearningRule):
+
+    def __init__(self, learning_rate=1e-3, mom1_coeff=0.9, mom2_coeff=0.999):
+        super(ADAMLearningRule, self).__init__(learning_rate)
+        assert mom1_coeff >= 0. and mom1_coeff <= 1., (
+            'mom1_coeff should be in the range [0, 1].'
+        )
+        assert mom2_coeff >= 0. and mom2_coeff <= 1., (
+            'mom2_coeff should be in the range [0, 1].'
+        )
+        self.mom1_coeff = mom1_coeff
+        self.mom2_coeff = mom2_coeff
+
+    def initialise(self, params):
+        super(ADAMLearningRule, self).initialise(params)
+        self.moms1 = []
+        self.moms2 = []
+        for param in self.params:
+            self.moms1.append(np.zeros_like(param))
+            self.moms2.append(np.zeros_like(param))
+
+    def reset(self):
+        """Resets any additional state variables to their intial values.
+
+        For this learning rule this corresponds to zeroing all the momenta.
+        """
+        for mom1 in zip(self.moms1):
+            mom1 *= 0.
+        for mom2 in zip(self.moms2):
+            mom2 *= 0.
+
+    def update_params(self, grads_wrt_params):
+        """Applies a single update to all parameters.
+
+        All parameter updates are performed using in-place operations and so
+        nothing is returned.
+
+        Args:
+            grads_wrt_params: A list of gradients of the scalar loss function
+                with respect to each of the parameters passed to `initialise`
+                previously, with this list expected to be in the same order.
+        """
+        for param, mom1, mom2, grad in zip(self.params, self.moms1, self.moms2, grads_wrt_params):
+            mom1 *= self.mom1_coeff
+            mom1 += (1 - self.mom1_coeff) * grad
+            mom2 *= self.mom2_coeff
+            mom2 += (1 - self.mom2_coeff) * (grad ** 2)
+            param -= ((self.learning_rate * mom1) / (np.sqrt(mom2) + 1e-8))
