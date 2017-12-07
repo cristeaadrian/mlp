@@ -14,6 +14,7 @@ respect to the layer parameters.
 
 import numpy as np
 import mlp.initialisers as init
+from numpy.lib.stride_tricks import as_strided
 from mlp import DEFAULT_SEED
 
 class Layer(object):
@@ -476,8 +477,253 @@ class SigmoidLayer(Layer):
 
     def __repr__(self):
         return 'SigmoidLayer'
-
+    
 class ConvolutionalLayer(LayerWithParameters):
+    """Layer implementing a 2D convolution-based transformation of its inputs.
+    The layer is parameterised by a set of 2D convolutional kernels, a four
+    dimensional array of shape
+        (num_output_channels, num_input_channels, kernel_dim_1, kernel_dim_2)
+    and a bias vector, a one dimensional array of shape
+        (num_output_channels,)
+    i.e. one shared bias per output channel.
+    Assuming no-padding is applied to the inputs so that outputs are only
+    calculated for positions where the kernel filters fully overlap with the
+    inputs, and that unit strides are used the outputs will have spatial extent
+        output_dim_1 = input_dim_1 - kernel_dim_1 + 1
+        output_dim_2 = input_dim_2 - kernel_dim_2 + 1
+    """
+
+    def __init__(self, num_input_channels, num_output_channels,
+                 input_dim_1, input_dim_2,
+                 kernel_dim_1, kernel_dim_2,
+                 kernels_init=init.UniformInit(-0.01, 0.01),
+                 biases_init=init.ConstantInit(0.),
+                 kernels_penalty=None, biases_penalty=None):
+        """Initialises a parameterised convolutional layer.
+        Args:
+            num_input_channels (int): Number of channels in inputs to
+                layer (this may be number of colour channels in the input
+                images if used as the first layer in a model, or the
+                number of output channels, a.k.a. feature maps, from a
+                a previous convolutional layer).
+            num_output_channels (int): Number of channels in outputs
+                from the layer, a.k.a. number of feature maps.
+            input_dim_1 (int): Size of first input dimension of each 2D
+                channel of inputs.
+            input_dim_2 (int): Size of second input dimension of each 2D
+                channel of inputs.
+            kernel_dim_1 (int): Size of first dimension of each 2D channel of
+                kernels.
+            kernel_dim_2 (int): Size of second dimension of each 2D channel of
+                kernels.
+            kernels_intialiser: Initialiser for the kernel parameters.
+            biases_initialiser: Initialiser for the bias parameters.
+            kernels_penalty: Kernel-dependent penalty term (regulariser) or
+                None if no regularisation is to be applied to the kernels.
+            biases_penalty: Biases-dependent penalty term (regulariser) or
+                None if no regularisation is to be applied to the biases.
+        """
+        self.num_input_channels = num_input_channels
+        self.num_output_channels = num_output_channels
+        self.input_dim_1 = input_dim_1
+        self.input_dim_2 = input_dim_2
+        self.kernel_dim_1 = kernel_dim_1
+        self.kernel_dim_2 = kernel_dim_2
+        self.kernels_init = kernels_init
+        self.biases_init = biases_init
+        self.kernels_shape = (
+            num_output_channels, num_input_channels, kernel_dim_1, kernel_dim_2
+        )
+        self.inputs_shape = (
+            None, num_input_channels, input_dim_1, input_dim_2
+        )
+        self.kernels = self.kernels_init(self.kernels_shape)
+        self.biases = self.biases_init(num_output_channels)
+        self.kernels_penalty = kernels_penalty
+        self.biases_penalty = biases_penalty
+
+        self.cache = None
+
+    def fprop(self, inputs):
+        """Forward propagates activations through the layer transformation.
+        For inputs `x`, outputs `y`, kernels `K` and biases `b` the layer
+        corresponds to `y = conv2d(x, K) + b`.
+        Args:
+            inputs: Array of layer inputs of shape (batch_size, input_dim).
+        Returns:
+            outputs: Array of layer outputs of shape (batch_size, output_dim).
+        """
+        
+        sub_shape = (self.kernel_dim_1, self.kernel_dim_2)
+        shape = inputs.shape[0:2] + tuple(
+                np.subtract((
+                self.input_dim_1, self.input_dim_2), sub_shape) + 1
+            ) + sub_shape
+        M = as_strided(inputs, 
+                       shape=shape, 
+                       strides=inputs.strides + inputs.strides[-2:]
+                       ) 
+        output = np.einsum('fcpq, bcyzpq -> bfyz', 
+                           self.kernels[:, :, ::-1, ::-1], M)
+        for i in range(self.num_output_channels):
+            output[:,i,:,:] = output[:,i,:,:] + self.biases[i]
+        return output       
+        
+
+    def bprop(self, inputs, outputs, grads_wrt_outputs):
+        """Back propagates gradients through a layer.
+        Given gradients with respect to the outputs of the layer calculates the
+        gradients with respect to the layer inputs.
+        Args:
+            inputs: Array of layer inputs of shape
+                (batch_size, num_input_channels, input_dim_1, input_dim_2).
+            outputs: Array of layer outputs calculated in forward pass of
+                shape
+                (batch_size, num_output_channels, output_dim_1, output_dim_2).
+            grads_wrt_outputs: Array of gradients with respect to the layer
+                outputs of shape
+                (batch_size, num_output_channels, output_dim_1, output_dim_2).
+        Returns:
+            Array of gradients with respect to the layer inputs of shape
+            (batch_size, input_dim).
+        """
+        # Pad the grads_wrt_outputs
+
+        padded_grads = np.pad(grads_wrt_outputs, 
+                              [(0, 0), (0, 0), 
+                               (self.kernel_dim_1 - 1, self.kernel_dim_1 - 1), 
+                               (self.kernel_dim_2 - 1, self.kernel_dim_2 - 1)],
+                               mode='constant')
+        sub_shape = (self.kernel_dim_1, self.kernel_dim_2)
+        shape = padded_grads.shape[0:2] + tuple(
+                np.subtract(padded_grads.shape[-2:], sub_shape) + 1
+                ) + sub_shape
+        M = as_strided(padded_grads, 
+                       shape=shape, 
+                       strides=padded_grads.strides + padded_grads.strides[-2:]
+                       ) 
+        output = np.einsum('fcpq, bfyzpq -> bcyz', self.kernels, M)
+        return output       
+              
+
+    def grads_wrt_params(self, inputs, grads_wrt_outputs):
+        """Calculates gradients with respect to layer parameters.
+        Args:
+            inputs: array of inputs to layer of shape (batch_size, input_dim)
+            grads_wrt_to_outputs: array of gradients with respect to the layer
+                outputs of shape
+                (batch_size, num_output-_channels, output_dim_1, output_dim_2).
+        Returns:
+            list of arrays of gradients with respect to the layer parameters
+            `[grads_wrt_kernels, grads_wrt_biases]`.
+        """
+
+        sub_shape = grads_wrt_outputs.shape[-2:]
+        shape = inputs.shape[0:2] + tuple(
+                np.subtract(inputs.shape[-2:], sub_shape) + 1
+                ) + sub_shape
+        M = as_strided(inputs, shape=shape, 
+                       strides=inputs.strides + inputs.strides[-2:]) 
+        output = np.einsum('bfpq, bcyzpq -> fcyz', grads_wrt_outputs, M)
+        output1 = output[:,:,::-1,::-1]
+        output2 = np.einsum('bfpq -> f', grads_wrt_outputs)
+        return [output1, output2]
+
+    def params_penalty(self):
+        """Returns the parameter dependent penalty term for this layer.
+        If no parameter-dependent penalty terms are set this returns zero.
+        """
+        params_penalty = 0
+        if self.kernels_penalty is not None:
+            params_penalty += self.kernels_penalty(self.kernels)
+        if self.biases_penalty is not None:
+            params_penalty += self.biases_penalty(self.biases)
+        return params_penalty
+
+    @property
+    def params(self):
+        """A list of layer parameter values: `[kernels, biases]`."""
+        return [self.kernels, self.biases]
+
+    @params.setter
+    def params(self, values):
+        self.kernels = values[0]
+        self.biases = values[1]
+
+    def __repr__(self):
+        return (
+            'ConvolutionalLayer(\n'
+            '    num_input_channels={0}, num_output_channels={1},\n'
+            '    input_dim_1={2}, input_dim_2={3},\n'
+            '    kernel_dim_1={4}, kernel_dim_2={5}\n'
+            ')'
+            .format(self.num_input_channels, self.num_output_channels,
+                    self.input_dim_1, self.input_dim_2, self.kernel_dim_1,
+                    self.kernel_dim_2)
+)
+    
+class MaxPoolingLayer(Layer):
+    
+    def __init__(self, pool_size=2):
+        """Construct a new max-pooling layer.
+        
+        Args:
+            pool_size: Positive integer specifying size of pools over
+               which to take maximum value. The outputs of the layer
+               feeding in to this layer must have a dimension which
+               is a multiple of this pool size such that the outputs
+               can be split in to pools with no dimensions left over.
+        """
+        self.pool_size = pool_size
+    
+    def fprop(self, inputs):
+        """Forward propagates activations through the layer transformation.
+        
+        This corresponds to taking the maximum over non-overlapping pools of
+        inputs of a fixed size `pool_size`.
+        Args:
+            inputs: Array of layer inputs of shape (batch_size, input_dim).
+        Returns:
+            outputs: Array of layer outputs of shape (batch_size, output_dim).
+        """
+        assert tuple(
+                item % self.pool_size for item in inputs.shape[-2:]
+                ) == (0, 0), (
+                'Last two dimensions of inputs must be multiple of pool size')
+        sub_shape = (self.pool_size, self.pool_size)
+        shape = inputs.shape[:2] + tuple(
+                item // self.pool_size for item in inputs.shape[-2:]
+                ) + sub_shape
+        strides = inputs.strides[0:2] + tuple(
+                self.pool_size * item for item in inputs.strides[-2:]
+                ) + inputs.strides[-2:]
+        pooled_inputs = as_strided(inputs, shape=shape, strides=strides)
+        pool_maxes = pooled_inputs.max((-1, -2))
+        self._mask = pooled_inputs == pool_maxes[..., None, None] 
+        return pool_maxes
+
+    def bprop(self, inputs, outputs, grads_wrt_outputs):
+        """Back propagates gradients through a layer.
+        Given gradients with respect to the outputs of the layer calculates the
+        gradients with respect to the layer inputs.
+        Args:
+            inputs: Array of layer inputs of shape (batch_size, input_dim).
+            outputs: Array of layer outputs calculated in forward pass of
+                shape (batch_size, output_dim).
+            grads_wrt_outputs: Array of gradients with respect to the layer
+                outputs of shape (batch_size, output_dim).
+        Returns:
+            Array of gradients with respect to the layer inputs of shape
+            (batch_size, input_dim).
+        """
+        return (self._mask * 
+                grads_wrt_outputs[..., None, None]
+                ).swapaxes(-3, -2).reshape(inputs.shape)
+
+    def __repr__(self):
+        return 'MaxPoolingLayer(pool_size={0})'.format(self.pool_size)
+
+class ConvolutionalLayer2(LayerWithParameters):
     """Layer implementing a 2D convolution-based transformation of its inputs.
     The layer is parameterised by a set of 2D convolutional kernels, a four
     dimensional array of shape
