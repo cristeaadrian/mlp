@@ -1,0 +1,58 @@
+\begin{thebibliography}{8}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[int()]{intoli}
+Understanding neural network weight initialization.
+\newblock URL \url{https://intoli.com/blog/neural-network-initialization/}.
+
+\bibitem[Andyljones(2015)]{andyljones_2015}
+Andyljones.
+\newblock An explanation of xavier initialization, Feb 2015.
+\newblock URL
+  \url{http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization}.
+
+\bibitem[{Cire{\c s}an} et~al.(2012){Cire{\c s}an}, {Meier}, and
+  {Schmidhuber}]{2012arXiv1202.2745C}
+{Cire{\c s}an}, D., {Meier}, U., and {Schmidhuber}, J.
+\newblock {Multi-column Deep Neural Networks for Image Classification}.
+\newblock \emph{ArXiv e-prints}, February 2012.
+
+\bibitem[Clevert et~al.(2015)Clevert, Unterthiner, and Hochreiter]{elu}
+Clevert, Djork{-}Arn{\'{e}}, Unterthiner, Thomas, and Hochreiter, Sepp.
+\newblock Fast and accurate deep network learning by exponential linear units
+  (elus).
+\newblock \emph{CoRR}, abs/1511.07289, 2015.
+\newblock URL \url{http://arxiv.org/abs/1511.07289}.
+
+\bibitem[Economist(2016)]{the_economist_2016}
+Economist.
+\newblock From not working to neural networking, Jun 2016.
+\newblock URL
+  \url{https://www.economist.com/news/special-report/21700756-artificial-intelligence-boom-based-old-idea-modern-twist-not}.
+
+\bibitem[Klambauer et~al.(2017)Klambauer, Unterthiner, Mayr, and
+  Hochreiter]{selu}
+Klambauer, G{\"{u}}nter, Unterthiner, Thomas, Mayr, Andreas, and Hochreiter,
+  Sepp.
+\newblock Self-normalizing neural networks.
+\newblock \emph{CoRR}, abs/1706.02515, 2017.
+\newblock URL \url{http://arxiv.org/abs/1706.02515}.
+
+\bibitem[{LeCun} et~al.(){LeCun}, {Bottou}, {Bengio}, and
+  {Haffner}]{lecun_1998}
+{LeCun}, Y., {Bottou}, L., {Bengio}, Y., and {Haffner}, P.
+\newblock Gradient-based learning applied to document recognition.
+\newblock \emph{Proceedings of the IEEE}, \penalty0 (86(11):2278-2324).
+
+\bibitem[R{\"a}dle(2010)]{rädle2010neuronale}
+R{\"a}dle, K.
+\newblock \emph{Neuronale Netze: eine Einf{\"u}hrung mit Programmbeispielen}.
+\newblock Pro Business, 2010.
+\newblock ISBN 9783868056266.
+\newblock URL \url{https://books.google.co.uk/books?id=PzUi3plU7BMC}.
+
+\end{thebibliography}

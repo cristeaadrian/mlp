@@ -1,0 +1,364 @@
+%% Template for MLP Coursework 1 / 16 October 2017 
+
+%% Based on  LaTeX template for ICML 2017 - example_paper.tex at 
+%%  https://2017.icml.cc/Conferences/2017/StyleAuthorInstructions
+
+\documentclass{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{amssymb,amsmath}
+\usepackage{txfonts}
+\usepackage{microtype}
+
+% For figures
+%\usepackage{svg}
+
+\usepackage[inkscape={/Applications/Inkscape.app/Contents/Re‌​sources/bin/inkscape -z -C}]{svg}
+\usepackage{graphicx}
+\usepackage{subfigure} 
+
+% For citations
+\usepackage{natbib}
+
+% For algorithms
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% the hyperref package is used to produce hyperlinks in the
+% resulting PDF.  If this breaks your system, please commend out the
+% following usepackage line and replace \usepackage{mlp2017} with
+% \usepackage[nohyperref]{mlp2017} below.
+\usepackage{hyperref}
+\usepackage{url}
+\urlstyle{same}
+
+% Packages hyperref and algorithmic misbehave sometimes.  We can fix
+% this with the following command.
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+
+% Set up MLP coursework style (based on ICML style)
+\usepackage{mlp2017}
+\mlptitlerunning{MLP Coursework 1 (\studentNumber)}
+\bibliographystyle{icml2017}
+
+
+\DeclareMathOperator{\softmax}{softmax}
+\DeclareMathOperator{\sigmoid}{sigmoid}
+\DeclareMathOperator{\sgn}{sgn}
+\DeclareMathOperator{\relu}{relu}
+\DeclareMathOperator{\lrelu}{lrelu}
+\DeclareMathOperator{\elu}{elu}
+\DeclareMathOperator{\selu}{selu}
+\DeclareMathOperator{\maxout}{maxout}
+
+%% You probably do not need to change anything above this comment
+
+%% REPLACE this with your student number
+\def\studentNumber{s1449640}
+
+\begin{document} 
+
+\twocolumn[
+\mlptitle{MLP Coursework 1: Activation Functions}
+
+\centerline{\studentNumber}
+
+\vskip 7mm
+]
+
+\begin{abstract} 
+Analyse the training of multi-layer neural networks to address the MNIST digit classification problem. More specifically, comparing different activation functions, including Sigmoid, ReLU, Leaky ReLU, ELU and SELU, by looking at their effects on the error function and the accuracy on the train and validation sets. Furthermore, analysing the behaviour of a ELU-based network with a varying number of hidden layers (between 2 and 8) to determine whether a deeper or a shallower network is suitable for this task. It is clear that very deep networks suffer heavily from overfitting the data, and that there is little difference between ReLU and it's variants when using the same fixed hyperparameters. Finally, different methods of initialising the weight parameters for the hidden layers are also taken into account when measuring performance.
+\end{abstract} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SECTION 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%---------------------------------Introduction-----------------------------------%
+\section{Introduction}\label{sec:intro}
+The task of recognising handwritten symbols has historically been considered to be difficult or impossible to achieve without first developing Artificial General Intelligence \citep{the_economist_2016}. Throughout the years, many algorithms, albeit far more specialised than initially thought, have successfully achieved very high accuracy rates, with the current state of the art being 99,77\% \citep{2012arXiv1202.2745C}. These algorithms range from relatively simple Logistic Regression Models to Support Vector Machines (SVMs) and Artificial Neural Networks (see \ref{sec:subintro}). In this coursework, I will explore the task of recognising handwritten digits from the MNIST dataset (see \ref{sec:dataset}) by applying various Neural Network models.
+
+\subsection{Neural Networks}\label{sec:subintro}
+An (artificial) neural network (ANN) is a network of simple elements called neurons, which are loosely based on the biological neurons found in animals. These neurons receive an input which changes their state according to a weight (and bias) ascribed to it, run it through an activation function (see \ref{sec:actfn}) and finally produce an output. This network then forms a directed graph where the neurons are nodes and the edges are the weighted connection between them. At the end of this, the network propagates the final outputs back into the network, through a process called backpropagation and \textit{"learns"} (by adjusting the weights of the edges) whether it has achieved a correct or incorrect result based on an annotated training dataset. \citep{rädle2010neuronale}
+
+\subsection{MNIST Dataset}\label{sec:dataset}
+The MNIST database of handwritten digits has a training set of 60,000 examples, and a test set of 10,000 examples \citep{lecun_1998}. In this coursework, I have only use the first 60,000 data points by splitting it into 50,000 training and 10,000 validation set examples. All tests will have been run on both of these sets, but not the test set. Each data point is represented by a 28 by 28 image in grey-scale, which is then formatted into a 784 dimensional row vector, used as an input.
+
+\subsection{Default testing environment}\label{sec:testing_env}
+All tests were carried out using the default setting provided in the official GitHub repository: each hidden layer has 100 neurons while the output layer has 10. The learning rate was set to 0.1 as my own brief testing showed little to no improvements in changing this value by comparing it on the baseline Sigmoid activation function (see \ref{sec:actfn}). Furthermore both the batch size and the number of epochs (for the Batch Gradient Descent learning algorithm) were set to 100.
+
+\subsection{Activation Functions}\label{sec:activation_funct}
+Using different activation functions can have large effects on the performance of a Neural Network. It is claimed that modern variations of Rectified Linear Units (ReLUs) can speed up the training of networks significantly \citep{elu} \citep{selu}, as opposed to a traditional implementation of ReLU or, the traditionally used, Sigmoid functions. In this coursework, five different activation functions were analysed: Sigmoid, ReLU, Leaky Relu, ELU (Exponential Linear Unit), SELU (Scaled Exponential Linear Unit).
+
+\subsection{Deep Neural Networks}\label{sec:deep_nets}
+When using a neural network for a supervised classification task, it is usually claimed that shallow networks are easier to train, but have far worse accuracy performance on large datasets compared to deeper networks, which can be very slow to train, but achieve lower error values and better accuracy. I decided to experiment on a network based on the Exponential Linear Unit (ELU) activation function for the hidden layers, because it claims to be able to achieve quicker and better results in deeper networks \citep{elu}. A comparison of 2, 5 and 8 layers is shown here, although I did train all networks between 2 and 8 layers, to get a sense of which were most interesting to compare. 
+
+\subsection{Weight Initialisation}\label{sec:initialisation}
+Weight initialisation can seem like a small detail to care about when first diving into the subject of NNs, but it can actually have a profound effect on performance \citep{intoli}. In the case that weights are naively initialised to 0, the network might now work at all! Here we will explore different initialisation methods on ELU- and SELU-based networks, and see if they affect performance in any noticeable way.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SECTION 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%------------------------------Activation Functions------------------------------%
+\section{Activation functions and their experimental comparison}\label{sec:actfn}
+This section will present all of the 5 activation functions tested and will contrast some of their features.
+
+%%%%% SIGMOID %%%%%%%%
+\subsection{Sigmoid}\label{sec:sigmoid}
+\begin{equation}
+  \sigmoid(x) = \frac{1}{1 + e^{-x}} ,
+\end{equation} 
+which has the gradient:
+\begin{equation}
+  \frac{d}{dx} \sigmoid(x) = \sigmoid(x) - (1 - \sigmoid(x))
+\end{equation}
+
+The sigmoid function, together with the Rectified Linear Unit (ReLU) (see \ref{sec:relu}), were considered baselines for the 2-hidden layer neural networks that had to be analysed in Part2A of the coursework. It managed to achieve the lowest score of all the tested activation functions, being the only function never to achieve a 0 error score, nor perfect accuracy on the training set.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2A-Images/sigmoid1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2A-Images/sigmoid2}
+    \end{subfigure}
+    \caption{Sigmoid activation function}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%% ReLU %%%%%%%%%%%
+\subsection{ReLU}\label{sec:relu}
+\begin{equation}
+  \relu(x) = \max(0, x) ,
+\end{equation} 
+which has the gradient:
+\begin{equation}
+  \frac{d}{dx} \relu(x) =
+     \begin{cases} 
+      0      & \quad \text{if } x \leq  0 \\
+      1      & \quad \text{if } x > 0 .
+    \end{cases} 
+\end{equation}
+
+In ReLU the activation is simply thresholded at 0. Compared to the sigmoid function, it doesn't involve calculating (computationally) expensive exponentiation of the input vectors, thus it is generally considered to be a faster and almost always better choice than the former. ReLU is the other baseline function to which the next 3 activation functions are compared to, these being slight variations on it.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2A-Images/relu1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2A-Images/relu2}
+    \end{subfigure}
+    \caption{ReLU activation function}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%% LEAKY RELU %%%%%
+\subsection{Leaky ReLU}\label{sec:lrelu}
+\begin{equation}
+  \lrelu(x) = 
+    \begin{cases}
+     \alpha x & \quad \text{if } x \leq  0 \\
+      x       & \quad \text{if } x > 0 .
+    \end{cases}
+\end{equation} 
+which has the gradient:
+\begin{equation}
+  \frac{d}{dx} \lrelu(x) =
+     \begin{cases} 
+      \alpha     & \quad \text{if } x < 0 \\
+        1        & \quad \text{if } x > 0 .
+    \end{cases} 
+\end{equation}
+
+Leaky ReLU tries to correct the \textit{"dying neuron"} problem by applying a very small value ($\alpha = 0.01$ is used here) to the slope when $x < 0$. A \textit{"dead"} neuron is one that always outputs the same value regardless of input, and this is usually arrived at by having a negative bias value. Once a neuron is \textit{"dead"}, the slope is equal to 0, so the gradient will never readjust it's weight value. 
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2A-Images/leakyrelu1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2A-Images/leakyrelu2}
+    \end{subfigure}
+    \caption{Leaky ReLU activation function}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%% ELU %%%%%%%%%%%%
+\subsection{ELU}\label{sec:elu}
+\begin{equation}
+  \elu(x) = 
+    \begin{cases}
+     \alpha (e^{x} - 1) & \quad \text{if } x \leq  0 \\
+     x          & \quad \text{if } x > 0 .
+    \end{cases}
+\end{equation} 
+which has the gradient:
+\begin{equation}
+  \frac{d}{dx} \elu(x) =
+     \begin{cases} 
+      \alpha e^{x}      & \quad \text{if } x < 0 \\
+      1      & \quad \text{if } x > 0 .
+    \end{cases} 
+\end{equation}
+
+The ELU Activation tries to speed up learning in deep neural networks and lead to higher accuracy rates for classification, by alleviating the \testit{vanishing gradient problem} \citep{elu}, which is a problem when multiplying small gradient values during backpropagation, leading the very deep networks being very slow to update the weight values of the first few layers. In this coursework, a value of $\alpha = 1$ was used, resulting in a smooth function.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2A-Images/elu1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2A-Images/elu2}
+    \end{subfigure}
+    \caption{ELU activation function}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%% SELU %%%%%%%%%%
+\subsection{SELU}\label{sec:selu}
+\begin{equation}
+  \selu(x) = \lambda
+    \begin{cases}
+     \alpha (e^{x} - 1) & \quad \text{if } x \leq  0 \\
+     x          & \quad \text{if } x > 0 .
+    \end{cases}
+\end{equation} 
+which has the gradient:
+\begin{equation}
+  \frac{d}{dx} \selu(x) =
+     \begin{cases} 
+      \lambda \alpha e^{x}  & \quad \text{if } x < 0 \\
+      \lambda                   & \quad \text{if } x > 0 .
+    \end{cases} 
+\end{equation}
+
+SELU induces self-normalising properties meaning that it tries to keep the mean value close to 0 and keeps a unit variance throught the network. This is claimed to speed up the process of training very deep networks, and experimental data seems to confirm this claim \citep{selu}. In my implementation, I have used the recommended value of $\alpha = 1.6733$ and $\lambda = 1.0507$.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2A-Images/selu1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2A-Images/selu2}
+    \end{subfigure}
+    \caption{SELU activation function}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Experimental Comparison of Activation Functions}
+We can clearly see that the Sigmoid activation function performed worst, by far, having never reached an error function value of 0 on either datasets, and a peak accuracy of 95\% on the validation set. ReLU and it's variants achieved very similar performance in this 2-layer NN, but it's also obvious that they were all overtraining on the data, because of reaching a value of 0 error on the train data, which then led to an increase of the error function on the validation set. They all managed to reach 100\% accuracy rate on the training set, and approximately 98\% on validation, surprisingly with ReLU having the most consistent and highest score of all.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SECTION 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%--------------------------------Deep Neural Nets--------------------------------%
+\section{Deep neural network experiments}\label{sec:dnnexpts}
+The data for the 2-, 5-, and 8-layer ELU-based NNs is presented here.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/2_elu1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/2_elu2}
+    \end{subfigure}
+    \caption{2-layer ELU Neural Network}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/5_elu1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/5_elu2}
+    \end{subfigure}
+    \caption{5-layer ELU Neural Network}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/8_elu1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/8_elu2}
+    \end{subfigure}
+    \caption{8-layer ELU Neural Network}
+\end{figure}
+
+\subsection{Analysis of the number of layers}
+We can see that the 8-layer NN reached the highest performance, as expected. However, there was significant noise in the beginning of the training process, as opposed to the shallower networks. Since the accuracy of the deepest network barely improved by less than 1\%, and the training time was significantly higher, even when using the purportedly faster ELU-based NN, we can safely conclude that for the task of recognising handwritten digits from the MNIST database it is appropriate to use a shallower, ideally 2-layer, Neural Network. This result is consistent with the pattern seen in previous experiments on the MNIST website, where recent developments have been using shallow Convolutional Neural Networks \citep{lecun_1998}.
+
+\newpage
+
+\subsection{Fan-In Initialisation}
+If the initial weights are too small, then by the time a forward propagation pass goes through the network, a useful weight might not be seen as important fast enough. Similarly, if a weights starts out massive, by the time it reaches the output layer, it might be too large to useful. Instead of using a simple uniform initialisation scheme, it's better to use ones with better mean and variance. \citep{andyljones_2015}
+
+In the case of fan-in, we care about the number of connection to a neuron, and use that to calculate the variance of the distribution from which we draw the initial numbers.\citep{andyljones_2015}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/fanin_elu1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/fanin_elu2}
+    \end{subfigure}
+    \caption{Fan-In Initialisation}
+\end{figure}
+
+\subsection{Fan-In and Fan-Out Initialisation}
+Similarly to the previous example, here we care about both the number of incoming connections and the outgoing ones.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/faninout_elu1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/faninout_elu2}
+    \end{subfigure}
+    \caption{Fan-In and Fan-Out Initialisation}
+\end{figure}
+
+\subsection{Gaussian Initialisation on SELU}
+Gaussian distribution is particularly well suited to SELU, since it is a self-normalising activation function, and the gaussian can be set to have it's variance and mean close to the mean at which it normalises. Thus, this initialisation scheme, has by far the best performance in the accuracy of both sets, but it seems to have an issue when starting up. However, once it does, it takes only a few passes in the network to reach convergence on a local minimum, with an accuracy of over 98\%.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/gaussian_selu1}
+    \end{subfigure}
+    \begin{subfigure}{}
+      \includesvg[width=0.48\textwidth]{Part2B-Images/gaussian_selu2}
+    \end{subfigure}
+    \caption{Gaussian intialisation on SELU}
+\end{figure}
+
+\subsection{Analysis of initialisation schemes}
+By far the most performant one seems to be the Gaussian Initialisation using SELU. This however has a weird and unpredictable behaviour in the beginning, and achieves great performance once it does get started. Both \testit{fan-in} and the \testit{fan-in and fan-out} seem to achieve similar performance, and do not offer much over the usual Uniform Distribution-based initialisation scheme, used in \ref{sec:actfn}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SECTION 6 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%-----------------------Conclusion and Further Discussion------------------------%
+\section{Conclusions}\label{sec:concl}
+
+Overall, there seems to be a strong correlation between using the more advanced, ReLU-based Neural Networks as opposed to a Sigmoid-based one, but there are very small differences between them. These achieve very high performance and low error rates. Furthermore, for this task, it doesn't seem to be beneficial to use more than 2 hidden layers when training the data, because of the issue of overfitting. Finally, initialisation schemes seem to have a bigger influence than I expected, it being the determining factor of the performance of my SELU-based network, achieving an almost perfect accuracy score.
+
+Further improvements to these networks could be easily made by analysing when to stop the gradient descent algorithms, since all ReLU-based NNs started overtraining on the data approximately when reaching epoch no. 20. Additionally, determining a way to better initialise the learning rate could also help in creating faster, more robust networks. 
+
+\bibliography{example-refs}
+
+\end{document} 
+
+
+% This document was modified from the file originally made available by
+% Pat Langley and Andrea Danyluk for ICML-2K. This version was
+% created by Lise Getoor and Tobias Scheffer, it was slightly modified  
+% from the 2010 version by Thorsten Joachims & Johannes Fuernkranz, 
+% slightly modified from the 2009 version by Kiri Wagstaff and 
+% Sam Roweis's 2008 version, which is slightly modified from 
+% Prasad Tadepalli's 2007 version which is a lightly 
+% changed version of the previous year's version by Andrew Moore, 
+% which was in turn edited from those of Kristian Kersting and 
+% Codrina Lauth. Alex Smola contributed to the algorithmic style files.  
